@@ -1,0 +1,20 @@
+header-includes: |
+  ```{=typst}
+  #set text(ligatures: true, discretionary-ligatures: false, number-type: "old-style")
+  #set par(leading: 0.65em, justify: true)
+  #show figure.caption: it => [
+    #set text(font: "Helvetica", size: 10pt, discretionary-ligatures: false, number-type: "lining")
+    #emph[#it.supplement~#context(it.counter.display(it.numbering)) — #it.body]
+  ]
+  #set list(spacing: 1.2em)
+  //#show heading.where(level:1): it=> [#pagebreak() #it]
+  ```
+mainfont: "Helvetica"
+fontsize: 11pt
+monofont: "Consolas"
+papersize: a4
+margin: {x: 2cm, y: 2.5cm}
+columns: 1
+lang: "en-GB"
+toc-title: "Table of Contents"
+doindex: false

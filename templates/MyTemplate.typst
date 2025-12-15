@@ -1,0 +1,129 @@
+#let conf(
+  title: none,
+  subtitle: none,
+  authors: (),
+  affiliations: (),
+  keywords: (),
+  date: none,
+  abstract: none,
+  cols: 1,
+  margin: (x: 1.75cm, y: 2cm),
+  paper: "a4",
+  lang: "en",
+  region: "GB",
+  font: (),
+  fontsize: 11pt,
+  sectionnumbering: none,
+  header-left: none,
+  header-middle: none,
+  header-right: none,
+  doc,
+) = {
+  // Document metadata
+  set document(
+    title: title,
+    author: authors.map(author => content-to-string(author.name)),
+    keywords: keywords,
+  )
+
+  // Decide if we have any header content
+  let has_header =
+    header-left != none or header-middle != none or header-right != none
+
+  // Single page setup
+  set page(
+    paper: paper,
+    margin: margin,
+    numbering: "1",
+    header: if has_header {
+      [
+        #set text(size: 10pt, weight: "thin", fill: luma(170))
+        #if header-left   != none { header-left }
+        #h(1fr)
+        #if header-middle != none { header-middle }
+        #h(1fr)
+        #if header-right  != none { header-right }
+      ]
+    } else { none },
+    header-ascent: 40%,
+  )
+
+  // Text defaults
+  set par(justify: true)
+  set text(lang: lang, region: region, font: font, size: fontsize)
+  set heading(numbering: sectionnumbering)
+
+  // Title block (optional)
+  if title != none {
+    align(center)[#block(inset: 2em)[
+      #text(weight: "bold", size: 1.5em)[#title]
+      #(if subtitle != none {
+        parbreak()
+        text(weight: "bold", size: 1.25em)[#subtitle]
+      })
+    ]]
+  }
+
+  // Authors grid (optional)
+  if authors != none and authors != [] {
+    let count = authors.len()
+    let ncols = calc.min(count, 3)
+    grid(
+      columns: (1fr,) * ncols,
+      row-gutter: 1.5em,
+      column-gutter: 1.25em,
+      ..authors.map(author =>
+        align(center)[
+          #strong[#emph[#author.name]]
+          #if "affiliation" in author [
+            \ #text(size: 0.7em)[#emph[#author.affiliation]]
+          ]
+          #if "email" in author [
+            \ #text(size: 0.7em)[#underline[#author.email]]
+          ]
+        ]
+      )
+    )
+  }
+
+  // Date (optional)
+  if date != none {
+    align(center)[#block(inset: 1em)[ #date ]]
+  }
+
+  // Affiliations (optional)
+  if affiliations.len() > 0 {
+    set text(size: 9pt)
+    block(width: 100%, stroke: none, inset: (top: 20pt, bottom: 20pt), {
+      text(weight: "semibold", "Affiliations:")
+      parbreak()
+      affiliations.map(affiliation => {
+        super(affiliation.id)
+        h(1pt)
+        affiliation.name 
+        parbreak()
+      }).join("")
+    })
+  }
+
+  // Abstract (optional)
+  if abstract != none {
+    block(inset: (left: 2em, right: 2em))[
+      #text(weight: "semibold")[Abstract] #h(1em) #abstract
+    ]
+  }
+
+  // Keywords (optional)
+  if (keywords.len() > 0) {
+    text(size: 9pt, {
+      h(2em)
+      text(weight: "semibold", "Keywords")
+      h(8pt)
+      keywords.join(", ")
+    })
+  }
+  v(10pt)
+
+  // Columns
+  if cols == 1 { doc } else { columns(cols, doc) }
+}

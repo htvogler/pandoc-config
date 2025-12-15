@@ -1,0 +1,8 @@
+figureTitle: "Figure"
+tableTitle: "Table"
+figPrefix: "Figure"
+eqnPrefix: "Eq."
+tblPrefix: "Table"
+loftitle: "# List of figures"
+lotTitle: "# List of tables"
+#figureTemplate: "**$$figureTitle$$ $$i$$$$titleDelim$$** $$t$$" #prints Figure titles bold in docx. But doesn't work with other filters!
