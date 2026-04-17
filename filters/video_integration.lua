@@ -8,8 +8,8 @@ Usage:
 - Insert a fenced code block with class "video" (recommended for Scrivener pipelines):
 
     ~~~{.video}
-    src: videos/example.mp4
-    url: https://example.org/videos/example.mp4
+    src: videos_scrivomatic/example.mp4
+    url: https://example.org/videos_scrivomatic/example.mp4
     caption: Example video
     ~~~
 
@@ -27,19 +27,19 @@ Behavior:
 
 Notes:
 - No poster images are generated.
-- `src:` should be a relative path like videos/foo.mp4 so you can distribute
-  outputs as a ZIP containing the document plus a videos/ folder.
+- `src:` should be a relative path like videos_scrivomatic/foo.mp4 so you can distribute
+  outputs as a ZIP containing the document plus a videos_scrivomatic/ folder.
 - PDF viewers vary in how they handle local file links; cloud links are the most
   portable across viewers.
 
 Configuration:
-- Set VIDEO_STORE to the directory that contains your `videos/` folder.
+- Set VIDEO_STORE to the directory that contains your `videos_scrivomatic/` folder.
   Example:
     VIDEO_STORE = "/Users/htv/Downloads"
   With:
-    src: videos/intro.mp4
+    src: videos_scrivomatic/intro.mp4
   the source file is expected at:
-    /Users/htv/Downloads/videos/intro.mp4
+    /Users/htv/Downloads/videos_scrivomatic/intro.mp4
 ]]
 
 
@@ -124,9 +124,11 @@ local function base_dir_for_links()
   return workdir()
 end
 
--- Configure where your “master” videos live (stable, never overwritten)
--- Should be the folder that CONTAINS `videos/`
-local VIDEO_STORE = "/Users/htv/Downloads"
+-- Configure where your “master” videos_scrivomatic live (stable, never overwritten)
+-- Should be the folder that CONTAINS `videos_scrivomatic/`
+-- Default: ~/Downloads (portable across usernames)
+local VIDEO_STORE = (os.getenv("HOME") or "") .. "/Downloads"
+
 
 local function video_store()
   return os.getenv("VIDEO_STORE") or VIDEO_STORE

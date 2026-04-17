@@ -91,6 +91,7 @@ $endif$
 #show: doc => conf(
 $if(title)$
     title: [
+      #set par(justify: false)
       #set text(size: $if(title-fontsize)$$title-fontsize$$else$42pt$endif$)
       $title$
       ],

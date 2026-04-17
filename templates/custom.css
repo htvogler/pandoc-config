@@ -5,6 +5,13 @@ body {
 	max-width: 29cm;
 }
 
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+
 /* For smart quotes */
 q { quotes: "“" "”" "‘" "’"; }
 
@@ -213,20 +220,20 @@ div.warning {background: #FCC;}
 div.info p, div.todo p, div.warning p { padding: 0.25em; }
 
 figure {
-	display: inline-block;
-	text-align: center;
-	vertical-align: top;
-	/*float: outside;*/
-	width: 98%;
-	font-size: 0.8rem;
-	background: white;
-	overflow: visible;
-	border-radius: 5px;
-	border: 1px solid #EEE;
-	box-shadow: 1px 1px 8px 0px #888;
-	padding: 5px;
-	margin: 0 0 0.5em 0;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden; /* or overflow: auto; */
+  text-align: center;
+  font-size: 0.8rem;
+  background: white;
+  border-radius: 5px;
+  border: 1px solid #EEE;
+  box-shadow: 1px 1px 8px 0px #888;
+  padding: 5px;
+  margin: 0 0 0.5em 0;
 }
+
 
 figure.nofloat {
 	float: none;
