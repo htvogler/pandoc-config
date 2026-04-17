@@ -106,7 +106,7 @@ templates:
 #-----------------------------------------------------------------Standard
   typst:
     preprocessors:
-      - preprocessors/removeImageDimensions.rb
+#      - preprocessors/removeImageDimensions.rb
       - preprocessors/preprocess_tables.lua
     pandoc:
       verbose: false
@@ -118,6 +118,7 @@ templates:
       metadata-file: typst-includes.yaml
       wrap: none
       lua-filter:
+        - filters/SectionStyles_cleanup.lua
         - filters/typstFix.lua
 #        - filters/convertIndex.lua
         - filters/list-table.lua
@@ -126,6 +127,7 @@ templates:
         - filters/pretty-urls.lua
         - filters/fixDivforNonDOCX.lua
         - filters/fix_table_header.lua
+        - filters/fixTabs.lua
     metadata:
       doindex: false
     postprocessors:
@@ -176,6 +178,8 @@ templates:
         - filters/abstract-section.lua # move an abstract heading to metadata
         - filters/pretty-urls.lua # clean up URLs a bit
         - filters/fixTabs.lua
+        - filters/SectionStyles_cleanup.lua
+        - filters/diagram.lua
       filter:
         #- filters/removeHR #remove horizontal rules
         - filters/prependAll.rb # prepends institute:, comments: and keywords: metadata into the text
@@ -263,7 +267,7 @@ templates:
       from: markdown
       to: latex-smart # turn off smart to leave — … “” etc. as unicode, needs xetex or luatex
       standalone: true
-      pdf-engine: 'lualatex'
+      pdf-engine: 'xelatex'
       filter: 
         - filters/assimilateMetadata.rb # handle academic metadata
       lua-filter:
@@ -271,6 +275,7 @@ templates:
         - filters/abstract-section.lua # move an abstract heading to metadata
         - filters/pretty-urls.lua # clean up URLs a bit
         - filters/fixDivforNonDOCX.lua
+        - filters/SectionStyles_cleanup.lua
         - filters/fix_table_header.lua
       template: templates/MySimple.latex
     metadata:

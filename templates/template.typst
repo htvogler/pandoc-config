@@ -23,6 +23,7 @@
   lang: "en",
   region: "GB",
   font: (),
+  mathfont: none,
   fontsize: 11pt,
   sectionnumbering: none,
   header-left: none,
@@ -54,6 +55,9 @@
            region: region,
            font: font,
            size: fontsize)
+  if mathfont != none {
+    show math.equation: set text(font: mathfont)
+  }
   set heading(numbering: sectionnumbering)
 
   if title != none {
