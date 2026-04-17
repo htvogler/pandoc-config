@@ -166,7 +166,6 @@ local mermaid = {
     end)
   end,
 }
-
 --- TikZ
 --
 
@@ -629,6 +628,11 @@ local function code_to_figure (conf)
 
     -- Store the data in the media bag:
     pandoc.mediabag.insert(fname, imgtype, imgdata)
+    
+    -- For Typst and LaTeX, write the image to disk so the compiler can find it
+    if FORMAT == 'typst' or FORMAT == 'latex' then
+      write_file(fname, imgdata)
+    end
 
     -- Create the image object.
     local image = pandoc.Image(dgr_opt.alt, fname, "", dgr_opt['image-attr'])
