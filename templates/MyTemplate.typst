@@ -12,6 +12,7 @@
   lang: "en",
   region: "GB",
   font: (),
+  mathfont: none,
   fontsize: 11pt,
   sectionnumbering: none,
   header-left: none,
@@ -51,6 +52,9 @@
   // Text defaults
   set par(justify: true)
   set text(lang: lang, region: region, font: font, size: fontsize)
+  if mathfont != none {
+    show math.equation: set text(font: mathfont)
+  }
   set heading(numbering: sectionnumbering)
 
   // Title block (optional)

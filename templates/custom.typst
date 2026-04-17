@@ -4,6 +4,8 @@ $if(doindex)$
 $endif$
 //https://typst.app/universe/package/gentle-clues/
 #import "@preview/gentle-clues:1.0.0": *
+//https://typst.app/universe/package/mmdr/
+#import "@preview/mmdr:0.2.1": mermaid
 $definitions.typst()$
 
 #show terms: it => {
@@ -158,8 +160,13 @@ $endif$
 $if(papersize)$
     paper: "$papersize$",
 $endif$
-$if(mainfont)$
+$if(font)$
+    font: ($for(font)$"$font$"$sep$, $endfor$),
+$elseif(mainfont)$
     font: ("$mainfont$",),
+$endif$
+$if(mathfont)$
+    mathfont: "$mathfont$",
 $endif$
 $if(fontsize)$
     fontsize: $fontsize$,
@@ -211,6 +218,7 @@ $if(linestretch)$
 $endif$
 #show table: set par(justify: false)
 #show ref: strong
+#show raw.where(lang: "mermaid"): it => mermaid(it.text)
 #set quote(block: true)
 #show quote: set align(center)
 #show quote: set text(style: "italic")

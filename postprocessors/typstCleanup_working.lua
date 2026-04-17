@@ -132,69 +132,156 @@ local function tc_reorder_svg_layers_inplace(path_svg)
   end
 end
 
--- Replace <foreignObject> blocks (HTML labels) with simple <text> labels for Typst compatibility
--- Replace <foreignObject> (incl. namespaced / self-closing) with plain <text>
--- Replace <foreignObject> (any namespace / case / form) with plain <text>
+-- Replace <foreignObject> blocks (HTML labels) with plain <text> (no font/size scaling)
 local function tc_remove_foreign_objects(svg_path)
   local f = io.open(svg_path, "r"); if not f then return end
   local content = f:read("*a"); f:close()
   local original_content = content
+
   -- quick check to avoid rewriting when not needed
   if not content:lower():find("foreignobject", 1, true) then return end
 
-  -- 1) Replace paired <...foreignObject ...>...</...foreignObject>
-  local total = 0
-  local n = 0
-  repeat
-    content, n = content:gsub(
-      "<%s*[%w:]*[Ff]oreignObject[^>]*>([%z\1-\255]-)</%s*[%w:]*[Ff]oreignObject%s*>",
-      function(inner)
-        local text = inner
-          :gsub("<[^>]+>", " ")  -- strip all HTML-ish tags inside the block
-          :gsub("&nbsp;", " ")
-          :gsub("&amp;",  "&")
-          :gsub("&lt;",   "<")
-          :gsub("&gt;",   ">")
-          :gsub("%s+", " ")
-          :gsub("^%s+", ""):gsub("%s+$","")
-        return "<text>" .. text .. "</text>"
-      end
-    )
-    total = total + n
-  until n == 0
-  
-  -- 2) Remove self-closing <...foreignObject .../>
-  local n2
-  content, n2 = content:gsub("<%s*[%w:]*[Ff]oreignObject[^>]*/%s*>", "")
-  total = total + n2
-  if total > 0 then tc_dbg(("foreignObject: removed %d block(s)"):format(total)) end
-
-  -- small helper to verify balanced <g> tags before writing
-  local function tc_balanced(svg)
-    -- count ANY <g ...> (this includes self-closing)
-    local opens_any = select(2, svg:gsub("<%s*[Gg][^>]*>", ""))
-    -- count </g>
-    local closes    = select(2, svg:gsub("</%s*[Gg]%s*>", ""))
-    -- count self-closing <g .../>
-    local self      = select(2, svg:gsub("<%s*[Gg][^>]-/%s*>", ""))
-    -- only non-self-closing opens must be matched by closes
-    return (opens_any - self) == closes
+  -- helpers
+  local function xml_escape(s)
+    s = s:gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;")
+    return s
   end
 
+  -- simple line wrapper by character count
+  local function wrap_line_to_width(line, maxc)
+    local out, cur = {}, ""
+    for word in tostring(line):gmatch("%S+") do
+      if #cur == 0 then
+        cur = word
+      elseif #cur + 1 + #word <= maxc then
+        cur = cur .. " " .. word
+      else
+        table.insert(out, cur); cur = word
+      end
+    end
+    if #cur > 0 then table.insert(out, cur) end
+    return out
+  end
+
+  -- 1) Replace paired <foreignObject>…</foreignObject> with <text>/<tspan> (centered)
+  local n_paired
+  content, n_paired = content:gsub(
+    "(<%s*[%w:]*[Ff]oreignObject[^>]*>)([%z\1-\255]-)</%s*[%w:]*[Ff]oreignObject%s*>",
+    function(openTag, inner)
+      -- read box
+      local w = tonumber((openTag:match('width%s*=%s*"([%d%.]+)"') or openTag:match("width%s*=%s*'([%d%.]+)'") or "120")) or 120
+      local h = tonumber((openTag:match('height%s*=%s*"([%d%.]+)"') or openTag:match("height%s*=%s*'([%d%.]+)'") or "24"))  or 24
+      local x = tonumber(openTag:match('x%s*=%s*"([%d%.%-]+)"') or openTag:match("x%s*=%s*'([%d%.%-]+)'") or "0") or 0
+      local y = tonumber(openTag:match('y%s*=%s*"([%d%.%-]+)"') or openTag:match("y%s*=%s*'([%d%.%-]+)'") or "0") or 0
+      local transform = openTag:match('transform%s*=%s*"([^"]+)"') or openTag:match("transform%s*=%s*'([^']+)'")
+
+      -- center point
+      local cx, cy = x + w/2, y + h/2
+
+      -- normalize breaks and common entities
+      inner = inner
+        :gsub("</p>%s*<p>", "\n")
+        :gsub("<br%s*/?>", "\n")
+        :gsub("&nbsp;", " ")
+        :gsub("&amp;",  "&")
+
+      -- protect visible angle brackets so they don't get stripped as tags
+      inner = inner:gsub("&lt;", "__TC_LT__"):gsub("&gt;", "__TC_GT__")
+
+      -- strip real tags only (keep our protected tokens)
+      inner = inner:gsub("<%s*/?%s*[%w:._%-]+[^>]*>", " ")
+
+      -- restore visible angle brackets
+      inner = inner:gsub("__TC_LT__", "&lt;"):gsub("__TC_GT__", "&gt;")
+
+      -- collapse whitespace
+      inner = inner:gsub("[ \t]+", " "):gsub("^%s+", ""):gsub("%s+$","")
+
+      -- wrap by character count derived from box width (roughly ~9.6 px/char at Mermaid defaults)
+      local max_chars = math.max(1, math.floor(w / 9.6))
+
+      local logical = {}
+      for line in tostring(inner):gmatch("[^\n]+") do table.insert(logical, line) end
+      if #logical == 0 then logical = { inner } end
+
+      local lines = {}
+      for _, ln in ipairs(logical) do
+        local wrapped = wrap_line_to_width(ln, max_chars)
+        if #wrapped == 0 then table.insert(lines, "") else
+          for _, wln in ipairs(wrapped) do table.insert(lines, wln) end
+        end
+      end
+      if #lines == 0 then lines = { "" } end
+
+      -- fixed, pleasant line height; no h-based vertical scaling
+      local line_h_em = 1.25
+      local offset_em = -((#lines - 1) / 2) * line_h_em
+
+      -- build plain text + tspans; NO inline font-size, NO textLength/lengthAdjust
+      local parts = {}
+      if transform then parts[#parts+1] = string.format('<g transform="%s">', transform) end
+      parts[#parts+1] = '<text text-anchor="middle" dominant-baseline="middle" xml:space="preserve">'
+      for i, txt in ipairs(lines) do
+        -- decode & re-escape once to preserve <tif>-style content
+        txt = txt:gsub("&lt;", "<"):gsub("&gt;", ">")
+        txt = xml_escape(txt)
+        if i == 1 then
+          parts[#parts+1] = string.format('<tspan x="%.3f" y="%.3f" dy="%.4fem">%s</tspan>', cx, cy, offset_em, txt)
+        else
+          parts[#parts+1] = string.format('<tspan x="%.3f" dy="%.4fem">%s</tspan>', cx, line_h_em, txt)
+        end
+      end
+      parts[#parts+1] = '</text>'
+      if transform then parts[#parts+1] = '</g>' end
+      return table.concat(parts)
+    end
+  )
+
+  -- 2) Remove self-closing <foreignObject .../>
+  local n_self
+  content, n_self = content:gsub("<%s*[%w:]*[Ff]oreignObject[^>]*/%s*>", "")
+
+  local total = (n_paired or 0) + (n_self or 0)
+  if total > 0 then tc_dbg(("foreignObject: removed %d block(s)"):format(total)) end
+
+  -- write back (with a balance sanity check)
+  local function tc_balanced(svg)
+    local opens_any = select(2, svg:gsub("<%s*[Gg][^>]*>", ""))
+    local closes    = select(2, svg:gsub("</%s*[Gg]%s*>", ""))
+    local self      = select(2, svg:gsub("<%s*[Gg][^>]-/%s*>", ""))
+    return (opens_any - self) == closes
+  end
   local out = io.open(svg_path, "w")
   if out then
     if tc_balanced(content) then
       out:write(content)
-      tc_dbg("foreignObject stripped from: " .. svg_path)
     else
       tc_dbg("ABORT rewrite (unbalanced <g> tags): " .. svg_path)
-      -- Fallback keeps the file valid:
       out:write(original_content)
     end
     out:close()
   end
 end
 
+
+local function tc_fix_edge_orphans(svg_path)
+  local f = io.open(svg_path, "r"); if not f then return end
+  local svg = f:read("*a"); f:close()
+  local changed = 0
+  svg = svg:gsub('(<g[^>]-class=["\'][^"\']*edgeLabel[^"\']*["\'][^>]*>.-</g>)', function(block)
+    local before = block
+    -- merge a trailing 1–2 char tspan into the previous tspan, up to a few times
+    for _ = 1, 3 do
+      block = block:gsub('(<tspan[^>]*>[^<]-)</tspan>%s*<tspan([^>]*)>(%S%S?)</tspan>',
+                         '%1&#160;%3</tspan>')
+    end
+    if block ~= before then changed = changed + 1 end
+    return block
+  end)
+  if changed > 0 then
+    local w = io.open(svg_path, "w"); if w then w:write(svg); w:close() end
+  end
+end
 
 -- === Simplified image/label rewrite (no PDF conversion) ===
 -- Same name, more robust: clean every referenced SVG and keep labels on top
@@ -212,6 +299,7 @@ local function tc_rewrite_images_and_labels(lines)
       seen[svg] = true
       tc_dbg("found svg: " .. svg)         -- [ADD] debug message
       tc_remove_foreign_objects(svg)       -- strip <foreignObject> (paired & self-closing)
+      tc_fix_edge_orphans(svg)
     end
   end
 
