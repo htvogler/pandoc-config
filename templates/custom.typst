@@ -6,6 +6,10 @@ $endif$
 #import "@preview/gentle-clues:1.0.0": *
 $definitions.typst()$
 
+$if(pdf-standard)$
+#let pdf-standard = "$pdf-standard$"
+$endif$
+
 #show terms: it => {
     it.children
         .map(child => [

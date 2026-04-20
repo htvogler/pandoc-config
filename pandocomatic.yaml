@@ -132,8 +132,9 @@ templates:
     metadata:
       doindex: false
     postprocessors:
-      - postprocessors/typstCleanup.lua
       - postprocessors/typst_PDF_converter.lua
+      - postprocessors/typstCleanup.lua
+      - postprocessors/fixSVG.rb
 #-----------------------------------------------------------------
   typst-refs:
     extends: [refs, typst]

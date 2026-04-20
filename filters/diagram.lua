@@ -293,7 +293,7 @@ local cetz = {
 --- D2 engine for the D2 language
 local d2 = {
   line_comment_start = '#',
-  mime_types = mime_types_set{'png', 'svg'},
+  mime_types = mime_types_set{'pdf', 'png', 'svg'},
 
   compile = function (self, code, user_opts)
     return with_temporary_directory('diagram', function (tmpdir)
@@ -304,8 +304,8 @@ local d2 = {
         local infile = 'diagram.d2'
         local outfile = 'diagram.' .. file_extension
 
-        args = {'--bundle', '--pad=0', '--scale=1'}
-
+        args = {'--pad=0', '--scale=1'}
+        
         d2_user_opts = {
           'layout',
         }
@@ -344,7 +344,7 @@ local default_engines = {
 
 --- Options for the output format of the given name.
 local function format_options (name)
-  local pdf2svg = name ~= 'latex' and name ~= 'context'
+  local pdf2svg = name ~= 'latex' and name ~= 'context' --and name ~= 'typst'
   local is_office_format = name == 'docx' or name == 'odt'
   -- Office formats seem to work better with PNG than with SVG.
   local preferred_mime_types = is_office_format
