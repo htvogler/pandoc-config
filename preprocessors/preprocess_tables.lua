@@ -31,8 +31,8 @@ end
 local function split_line(line)
     local cells = {}
     for cell in line:gmatch("[^|]+") do
-        cell = cell:match("^%s*(.-)%s*$")
-        table.insert(cells, cell)
+            cell = cell:match("^%s*(.-)%s*$")
+            table.insert(cells, cell)
     end
     return cells
 end
